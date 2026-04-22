@@ -6,6 +6,9 @@ on:
 jobs:
   download-and-upload:
     runs-on: ubuntu-latest
+    # Increase permissions to allow the action to push to your repo
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -13,35 +16,39 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Install hf CLI and Git LFS
+      - name: Install hf CLI and Git-Xet
         run: |
-          git lfs install
+          # Install the new hf CLI
           curl -LsSf https://hf.co/cli/install.sh | bash
           echo "$HOME/.huggingface/bin" >> $GITHUB_PATH
+          
+          # Install Git-Xet (The new LFS replacement for 2026)
+          curl -sSfL https://hf.co/git-xet/install.sh | sh
+          git xet install
 
       - name: Download Gemma 3 1B
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 2026 Best Practice: Login first to verify gated access
-          hf auth login --token $HF_TOKEN --add-to-git-credential
+          # Authenticate
+          hf auth login --token $HF_TOKEN
           
           mkdir -p ks-ai-model
-          # Download files into the local directory
+          # Use the modern hf download command
           hf download google/gemma-3-1b-it --local-dir ./ks-ai-model
 
-      - name: Track and Commit
+      - name: Commit and Push
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          cd ks-ai-model
-          git lfs track "*.bin" "*.safetensors" "*.gguf" "*.model" "*.pt"
-          cd ..
+          # Use Xet to track the model files (Better than LFS)
+          git add .
           
-          git add .gitattributes
-          git add ks-ai-model/
-          
-          # Only push if there are new files
-          git diff --quiet && git diff --staged --quiet || git commit -m "Add Gemma 3 1B weights"
-          git push origin main
+          # Check if there are changes before committing
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Add Gemma 3 1B weights via hf CLI"
+            git push origin main
+          else
+            echo "No changes to commit"
+          fi
