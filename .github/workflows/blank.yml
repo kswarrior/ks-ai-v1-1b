@@ -28,10 +28,9 @@ jobs:
         run: |
           mkdir -p ks-ai-model
           
-          # Use the new 'hf' command directly
+          # Simplified 'hf' command based on your terminal output
           hf download google/gemma-3-1b-it model.safetensors \
             --local-dir ks-ai-model \
-            --local-dir-use-symlinks False \
             --token $HF_TOKEN
 
       - name: Commit and Push
