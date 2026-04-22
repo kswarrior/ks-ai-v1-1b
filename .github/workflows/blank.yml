@@ -13,26 +13,33 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Install Git LFS
+      - name: Install hf CLI and Git LFS
         run: |
           git lfs install
+          curl -LsSf https://hf.co/cli/install.sh | bash
+          echo "$HOME/.huggingface/bin" >> $GITHUB_PATH
 
       - name: Download Gemma 3 1B Files
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           mkdir -p ks-ai-model
-          cd ks-ai-model
-          hf download google/gemma-3-1b-it
-          git lfs track "*.bin"
-          git lfs track "*.safetensors"
-          git lfs track "*.gguf"
+          # Download files directly into the target folder
+          hf download google/gemma-3-1b-it --local-dir ./ks-ai-model --token $HF_TOKEN
 
-      - name: Commit and Push to your Repo
+      - name: Track and Commit
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
+          
+          # Ensure large files are tracked before adding
+          cd ks-ai-model
+          git lfs track "*.bin" "*.safetensors" "*.gguf" "*.model"
+          cd ..
+          
           git add .gitattributes
-          git add ks-ai-model/*
-          git commit -m "Add Gemma 3 1B weights for KS AI"
+          git add ks-ai-model/
+          
+          # Only commit if there are changes to avoid error
+          git diff --quiet && git diff --staged --quiet || git commit -m "Add Gemma 3 1B weights for KS AI"
           git push origin main
