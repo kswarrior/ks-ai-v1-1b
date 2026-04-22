@@ -12,37 +12,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          lfs: true # Ensures LFS is initialized if you are using it
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install Hugging Face CLI
-        run: pip install huggingface_hub
+          lfs: true
 
       - name: Download Gemma 3 1B
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           mkdir -p ks-ai-model
-          # Use the CLI to download only the specific file needed
-          huggingface-cli download google/gemma-3-1b-it model.safetensors \
-            --local-dir ks-ai-model \
-            --local-dir-use-symlinks False \
-            --token $HF_TOKEN
+          # Use the 'hf' tool as suggested by your environment hints
+          # Note: We pass the token directly to authenticate the download
+          hf download google/gemma-3-1b-it --include "model.safetensors" --local-dir ks-ai-model --token $HF_TOKEN
 
       - name: Commit and Push
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          # Stage the downloaded model
+          # Stage the specific model file
           git add ks-ai-model/model.safetensors
           
           if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Add Gemma 3 1B weights (automated)"
+            git commit -m "Add Gemma 3 1B weights via hf tool (automated)"
             git push origin main
             echo "✅ Model successfully pushed to repo!"
           else
