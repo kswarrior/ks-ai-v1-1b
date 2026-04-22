@@ -12,46 +12,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true  # Keep for compatibility, but Xet will handle large files
-
-      - name: Install hf CLI and Git-Xet
-        run: |
-          # Install the new hf CLI (installs to ~/.local/bin/hf)
-          curl -LsSf https://hf.co/cli/install.sh | bash
-          
-          # Add correct install location to PATH for this CI runner
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          
-          # Install Git-Xet (the 2026 LFS replacement powered by Xet storage)
-          curl -sSfL https://hf.co/git-xet/install.sh | sh
-          # Make sure git-xet binary is also in PATH (same location pattern)
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          
-          # Initialize Git-Xet (sets up git filters for automatic large-file handling)
-          git xet install
-
+        
       - name: Download Gemma 3 1B
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Safety check - fail fast with clear message if secret is missing
-          if [ -z "$HF_TOKEN" ]; then
-            echo "❌ Error: HF_TOKEN secret is not set!"
-            echo "   Please go to your GitHub repo → Settings → Secrets and variables → Actions"
-            echo "   and add a new secret named HF_TOKEN with your Hugging Face write token."
-            exit 1
-          fi
-          
-          echo "✅ HF_TOKEN found - authenticating..."
-          
-          # Authenticate using the modern hf CLI (fixed command + quoting)
-          hf auth login --token "$HF_TOKEN"
-          
-          # Create folder and download the full model (uses the authenticated token)
-          mkdir -p ks-ai-model
-          hf download google/gemma-3-1b-it --local-dir ./ks-ai-model --quiet
+          mkdir -p ks-ai-model && cd ks-ai-model
+          git clone https://huggingface.co/google/gemma-3-1b-it
 
       - name: Commit and Push
         run: |
