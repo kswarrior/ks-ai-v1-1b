@@ -1,7 +1,7 @@
 name: Clone Gemma 3 1B to Repo
 
 on:
-  workflow_dispatch: # Allows you to run this manually from the "Actions" tab
+  workflow_dispatch:
 
 jobs:
   download-and-upload:
@@ -11,40 +11,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true # Enable Large File Storage
+          lfs: true
 
-      - name: Install Git LFS and Hugging Face CLI
+      - name: Install Git LFS
         run: |
           git lfs install
-          pip install huggingface_hub
 
       - name: Download Gemma 3 1B Files
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Download everything except the heavy .git folder
-          huggingface-cli download google/gemma-3-1b-it --local-dir ./model-files --local-dir-use-symlinks False
-
-      - name: Prepare Files and Track with LFS
-        run: |
-          # Move files to a folder in your repo
           mkdir -p ks-ai-model
-          mv ./model-files/* ./ks-ai-model/
-          
-          # Tell Git to track large model files with LFS
           cd ks-ai-model
+          hf download google/gemma-3-1b-it
           git lfs track "*.bin"
           git lfs track "*.safetensors"
           git lfs track "*.gguf"
-          cd ..
 
       - name: Commit and Push to your Repo
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
-          
           git add .gitattributes
           git add ks-ai-model/*
-          
           git commit -m "Add Gemma 3 1B weights for KS AI"
           git push origin main
