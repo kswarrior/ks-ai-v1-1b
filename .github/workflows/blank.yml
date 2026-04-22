@@ -16,8 +16,8 @@ jobs:
       - name: Download Gemma 3 1B
         run: |
           mkdir -p ks-ai-model && cd ks-ai-model
-          git clone https://huggingface.co/google/gemma-3-1b-it
-
+          wget https://huggingface.co/google/gemma-3-1b-it/resolve/main/model.safetensors
+          
       - name: Commit and Push
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
