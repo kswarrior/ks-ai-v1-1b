@@ -13,6 +13,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          # Fetch all history so we don't have issues pushing back to main
+          fetch-depth: 0 
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -22,14 +24,13 @@ jobs:
       - name: Install Hugging Face Hub
         run: pip install --upgrade huggingface_hub
 
-      - name: Download Gemma 3 1B
+      - name: Download Gemma 3 1B (Full Model)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           mkdir -p ks-ai-model
-          
-          # Simplified 'hf' command based on your terminal output
-          hf download google/gemma-3-1b-it model.safetensors \
+          # Removing the filename "model.safetensors" downloads the whole repo
+          hf download google/gemma-3-1b-it \
             --local-dir ks-ai-model \
             --token $HF_TOKEN
 
@@ -38,21 +39,24 @@ jobs:
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          # 1. Initialize LFS and track safetensors
+          # 1. Ensure LFS is ready for all typical model file types
           git lfs install
           git lfs track "*.safetensors"
+          git lfs track "*.bin"
+          git lfs track "*.pt"
+          git lfs track "*.gguf"
           git add .gitattributes
           
-          # 2. Stage the model file
-          git add ks-ai-model/model.safetensors
+          # 2. Stage everything in the model directory
+          git add ks-ai-model/
           
-          # 3. Check status and push
+          # 3. Commit and Push
           if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Add Gemma 3 1B weights via Git LFS"
-            # Increase buffer for large file upload
+            git commit -m "Add full Gemma 3 1B model repository"
+            # Increase buffer to 500MB for large transfers
             git config http.postBuffer 524288000
             git push origin main
-            echo "✅ Model successfully pushed to repo!"
+            echo "✅ Full model successfully pushed to repo!"
           else
-            echo "No changes to commit"
+            echo "No changes to commit (repo already up to date)"
           fi
