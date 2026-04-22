@@ -21,25 +21,25 @@ jobs:
 
       - name: Download Gemma 3 1B Files
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }} # Auto-detected by hf tool
         run: |
           mkdir -p ks-ai-model
-          # Download files directly into the target folder
-          hf download google/gemma-3-1b-it --local-dir ./ks-ai-model --token $HF_TOKEN
+          # Use local-dir for the target folder; token is read from environment
+          hf download google/gemma-3-1b-it --local-dir ./ks-ai-model
 
       - name: Track and Commit
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          # Ensure large files are tracked before adding
+          # Track large model formats
           cd ks-ai-model
-          git lfs track "*.bin" "*.safetensors" "*.gguf" "*.model"
+          git lfs track "*.bin" "*.safetensors" "*.gguf" "*.model" "*.pt"
           cd ..
           
           git add .gitattributes
           git add ks-ai-model/
           
-          # Only commit if there are changes to avoid error
+          # Only commit if changes exist
           git diff --quiet && git diff --staged --quiet || git commit -m "Add Gemma 3 1B weights for KS AI"
           git push origin main
