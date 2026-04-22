@@ -19,28 +19,27 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install huggingface_hub
+      - name: Install Hugging Face Hub
+        run: pip install --upgrade huggingface_hub
 
       - name: Download Gemma 3 1B
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           mkdir -p ks-ai-model
-          # Using the python module directly ensures it's found in the path
-          python3 -m huggingface_hub.commands.user login --token $HF_TOKEN
           
-          python3 -m huggingface_hub.commands.download \
-            google/gemma-3-1b-it model.safetensors \
+          # Download using the CLI (no symlinks ensures the actual file is downloaded)
+          huggingface-cli download google/gemma-3-1b-it model.safetensors \
             --local-dir ks-ai-model \
-            --local-dir-use-symlinks False
+            --local-dir-use-symlinks False \
+            --token $HF_TOKEN
 
       - name: Commit and Push
         run: |
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          # This stages the file for Git LFS or Git-Xet
+          # Stage the file
           git add ks-ai-model/model.safetensors
           
           if [ -n "$(git status --porcelain)" ]; then
