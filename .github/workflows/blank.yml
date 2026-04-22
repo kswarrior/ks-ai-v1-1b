@@ -38,11 +38,19 @@ jobs:
           git config --global user.name "KS-AI-Bot-Deployer"
           git config --global user.email "bot@ks-ai.com"
           
-          # Stage the file
+          # 1. Initialize LFS and track safetensors
+          git lfs install
+          git lfs track "*.safetensors"
+          git add .gitattributes
+          
+          # 2. Stage the model file
           git add ks-ai-model/model.safetensors
           
+          # 3. Check status and push
           if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Add Gemma 3 1B weights (automated)"
+            git commit -m "Add Gemma 3 1B weights via Git LFS"
+            # Increase buffer for large file upload
+            git config http.postBuffer 524288000
             git push origin main
             echo "✅ Model successfully pushed to repo!"
           else
